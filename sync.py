@@ -65,7 +65,7 @@ def notify_discord(email, status="success", details=""):
         print(f"[DISCORD] Error: {e}")
 
 def signup_email(sb, email_addr):
-    print(f"\n[SIGNUP] Processing: {email_addr}")
+    print(f"\n[starting]")
     # Always open target URL to start fresh
     sb.open(TARGET_URL)
     
@@ -87,12 +87,10 @@ def signup_email(sb, email_addr):
     # Wait for success message "Check your email"
     sb.sleep(6)
     if sb.is_element_visible('div:contains("Check your email")'):
-        print(f"[DONE] RSVP success for {email_addr}")
+        print(f"[DONE]")
         return True
     else:
         # Fallback check - sometimes it might just show a "Thank you" or similar
-        print(f"[WARN] Status unclear for {email_addr}. Capture screenshot for debugging.")
-        sb.save_screenshot(f"screenshot_failed_{email_addr}.png")
         return False
 
 if __name__ == "__main__":
