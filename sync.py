@@ -28,11 +28,11 @@ def update_github_variable(name, value):
     try:
         r = requests.patch(url, headers=headers, json=data)
         if r.status_code == 204:
-            print(f"[GITHUB] Updated {name} to {value}")
+            print("[GITHUB] OK")
         else:
-            print(f"[GITHUB] Failed to update variable: {r.status_code} {r.text}")
-    except Exception as e:
-        print(f"[GITHUB] Error updating variable: {e}")
+            print(f"[GITHUB] FAIL ({r.status_code})")
+    except Exception:
+        print("[GITHUB] ERROR")
 
 def notify_discord(email, status="success", details=""):
     """Sends a clean Discord embed notification."""
@@ -65,7 +65,7 @@ def notify_discord(email, status="success", details=""):
         print(f"[DISCORD] Error: {e}")
 
 def signup_email(sb, email_addr):
-    print(f"\n[starting]")
+    print("Running...")
     # Always open target URL to start fresh
     sb.open(TARGET_URL)
     
@@ -87,10 +87,11 @@ def signup_email(sb, email_addr):
     # Wait for success message "Check your email"
     sb.sleep(6)
     if sb.is_element_visible('div:contains("Check your email")'):
-        print(f"[DONE]")
+        print("Success")
         return True
     else:
-        # Fallback check - sometimes it might just show a "Thank you" or similar
+        print("Fail")
+        sb.save_screenshot("fail_latest.png")
         return False
 
 if __name__ == "__main__":
@@ -125,7 +126,7 @@ if __name__ == "__main__":
         try:
             idx = int(NEXT_ROW)
             single_mode = True
-            print(f"[CONFIG] Processing single row index: {idx}")
+            print("Starting...")
         except ValueError:
             print(f"[WARN] Invalid NEXT_ROW '{NEXT_ROW}', starting from 0.")
 
@@ -138,11 +139,13 @@ if __name__ == "__main__":
             # Process single row
             email = rows[idx].get('email', '').strip()
             if email:
+                # Update GitHub variable IMMEDIATELY to prevent race conditions
+                # This ensures any subsequent trigger sees the next index right away.
+                update_github_variable("NEXT_ROW", idx + 1)
+                
                 success = signup_email(sb, email)
                 if success:
                     notify_discord(email, status="success")
-                    # Update GitHub variable for next run
-                    update_github_variable("NEXT_ROW", idx + 1)
                 else:
                     notify_discord(email, status="failed", details="RSVP status unclear. Check logs/artifacts.")
                     exit(1)
